@@ -2,6 +2,9 @@
 
 return [
     'enabled' => (bool) env('API_DEBUGGER_ENABLED', env('APP_DEBUG', false)),
+
+    'except_urls' => [],
+
     /**
      * Specify what data to collect.
      */

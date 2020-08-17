@@ -12,6 +12,15 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
     protected $defer = false;
 
     /**
+     * The URIs that should be excluded from CSRF verification.
+     *
+     * @var array
+     */
+    protected $except = [
+        //
+    ];
+
+    /**
      * Bootstrap application service.
      */
     public function boot()
@@ -22,7 +31,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
         // Register collections only for debug environment.
         $config = $this->app['config'];
-        if ($config['api-debugger.enabled']) {
+        $this->except = $config['api-debugger.except_urls'];
+        if ($config['api-debugger.enabled'] && ! $this->inExceptArray(request())) {
             $this->registerCollections($config['api-debugger.collections']);
 
             $this->setResponseKey($config['api-debugger.response_key']);
@@ -78,5 +88,26 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         if($key && $key !== Debugger::DEFAULT_RESPONSE_KEY){
             $debugger->setResponseKey($key);
         }
+    }
+
+    /**
+     * Determine if the request has a URI that should pass through CSRF verification.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    protected function inExceptArray($request)
+    {
+        foreach ($this->except as $except) {
+            if ($except !== '/') {
+                $except = trim($except, '/');
+            }
+
+            if ($request->fullUrlIs($except) || $request->is($except)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
